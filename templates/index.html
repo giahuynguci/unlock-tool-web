@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Công cụ Mở khóa Tài khoản</title>
+    <title>Công cụ Chẩn đoán Lỗi Hệ thống</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; box-sizing: border-box; }
         .container { background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 800px; }
@@ -35,27 +35,27 @@
 </head>
 <body>
     <div class="container">
-        <h1>Công cụ Mở khóa Tài khoản</h1>
+        <h1>Công cụ Kiểm tra Trạng thái Đồng bộ</h1>
         <form id="unlock-form">
             <div class="form-group">
-                <label for="curl_command">1. Dán cURL (Bao gồm Authorization và Cookies)</label>
-                <textarea id="curl_command" name="curl_command" rows="4" placeholder="Dán toàn bộ lệnh cURL của bạn vào đây..."></textarea>
+                <label for="curl_command">1. Dán Chuỗi truy vấn (Bao gồm Headers)</label>
+                <textarea id="curl_command" name="curl_command" rows="4" placeholder="Dán toàn bộ chuỗi truy vấn cURL vào đây..."></textarea>
             </div>
             <div class="form-group">
-                <label for="user_list">2. Dán Danh sách Tài khoản</label>
-                <textarea id="user_list" name="user_list" placeholder="Dán danh sách tài khoản cần mở khóa. Script sẽ tự động lọc ra các tên hợp lệ."></textarea>
+                <label for="user_list">2. Dán Danh sách ID cần kiểm tra</label>
+                <textarea id="user_list" name="user_list" placeholder="Dán danh sách ID cần kiểm tra. Hệ thống sẽ tự động lọc ra các định dạng hợp lệ."></textarea>
             </div>
             <div class="form-group">
-                <label for="ly_do">3. Lý do Mở khóa (Tùy chọn)</label>
+                <label for="ly_do">3. Ghi chú (Tùy chọn)</label>
                 <input type="text" id="ly_do" name="ly_do" value="{{ default_ly_do }}">
             </div>
             <div class="account-list" id="account-list-container">
-                <h3 id="account-list-title">Xem trước các tài khoản hợp lệ</h3>
+                <h3 id="account-list-title">Các ID hợp lệ được tìm thấy</h3>
                 <ul id="account-list"></ul>
             </div>
             <div class="button-container">
-                <button type="submit" id="unlock-btn" class="btn-primary" disabled>Mở khóa</button>
-                <button type="button" id="diag-btn" class="btn-secondary" disabled>Chẩn đoán TK không tồn tại</button>
+                <button type="submit" id="unlock-btn" class="btn-primary" disabled>Chạy Kiểm tra</button>
+                <button type="button" id="diag-btn" class="btn-secondary" disabled>Phân tích Lỗi</button>
             </div>
         </form>
         <div class="spinner" id="spinner"></div>
@@ -82,8 +82,8 @@
             accountList.innerHTML = ''; // Xóa danh sách cũ
 
             if (matches.length > 0) {
-                const uniqueMatches = [...new Set(matches)]; // Lọc các tài khoản trùng lặp
-                accountListTitle.innerText = `Tìm thấy ${uniqueMatches.length} tài khoản hợp lệ:`;
+                const uniqueMatches = [...new Set(matches)]; // Lọc các ID trùng lặp
+                accountListTitle.innerText = `Tìm thấy ${uniqueMatches.length} ID hợp lệ:`;
                 uniqueMatches.forEach(acc => {
                     const li = document.createElement('li');
                     li.textContent = acc;
@@ -93,7 +93,7 @@
                 unlockBtn.disabled = false;
                 diagBtn.disabled = false;
             } else {
-                accountListTitle.innerText = 'Chưa tìm thấy tài khoản hợp lệ nào.';
+                accountListTitle.innerText = 'Chưa tìm thấy ID hợp lệ nào.';
                 unlockBtn.disabled = true;
                 diagBtn.disabled = true;
             }
