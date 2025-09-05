@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+.venv/
+dist/
+build/
+
+# IDE files
+.idea/
+*.iml
+
+# OS files
+.DS_Store

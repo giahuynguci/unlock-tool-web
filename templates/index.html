@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Công cụ Mở khóa Tài khoản</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 0; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; box-sizing: border-box; }
+        .container { background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); width: 100%; max-width: 800px; }
+        h1 { font-size: 24px; color: #1c1e21; text-align: center; margin-bottom: 25px; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; font-weight: 600; color: #606770; margin-bottom: 8px; }
+        textarea, input[type="text"] { width: 100%; padding: 12px; border: 1px solid #dddfe2; border-radius: 6px; font-size: 16px; box-sizing: border-box; transition: border-color 0.2s; }
+        textarea:focus, input[type="text"]:focus { border-color: #1877f2; outline: none; }
+        textarea { min-height: 150px; resize: vertical; }
+        .button-container { text-align: center; margin-top: 25px; }
+        button { border: none; padding: 12px 24px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background-color 0.2s, box-shadow 0.2s; margin: 0 5px; }
+        .btn-primary { background-color: #1877f2; color: #fff; }
+        .btn-primary:hover { background-color: #166fe5; }
+        .btn-primary:disabled { background-color: #a0bdf5; cursor: not-allowed; }
+        .btn-secondary { background-color: #e4e6eb; color: #4b4f56; }
+        .btn-secondary:hover { background-color: #d8dade; }
+        .btn-secondary:disabled { background-color: #f0f2f5; color: #bec3c9; cursor: not-allowed; }
+        #result { margin-top: 25px; padding: 15px; border-radius: 6px; display: none; word-wrap: break-word; white-space: pre-wrap; max-height: 200px; overflow-y: auto; font-size: 13px; }
+        #result.success { background-color: #e7f3ff; border: 1px solid #b8d9ff; color: #004085; }
+        #result.error { background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .account-list { margin-top: 20px; display: none; }
+        .account-list h3 { font-size: 16px; color: #1c1e21; margin-bottom: 10px; border-bottom: 1px solid #dddfe2; padding-bottom: 5px; }
+        .account-list ul { list-style-type: none; padding-left: 0; margin: 0; max-height: 250px; overflow-y: auto; border: 1px solid #dddfe2; border-radius: 6px; padding: 10px; }
+        .account-list li { padding: 6px; font-family: Consolas, monaco, monospace; font-size: 14px; }
+        .account-list li:nth-child(odd) { background-color: #f7f7f7; }
+        .spinner { border: 4px solid #f3f3f3; border-top: 4px solid #1877f2; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; margin: 0 auto; display: none; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Công cụ Mở khóa Tài khoản</h1>
+        <form id="unlock-form">
+            <div class="form-group">
+                <label for="curl_command">1. Dán cURL (Bao gồm Authorization và Cookies)</label>
+                <textarea id="curl_command" name="curl_command" rows="4" placeholder="Dán toàn bộ lệnh cURL của bạn vào đây..."></textarea>
+            </div>
+            <div class="form-group">
+                <label for="user_list">2. Dán Danh sách Tài khoản</label>
+                <textarea id="user_list" name="user_list" placeholder="Dán danh sách tài khoản cần mở khóa. Script sẽ tự động lọc ra các tên hợp lệ."></textarea>
+            </div>
+            <div class="form-group">
+                <label for="ly_do">3. Lý do Mở khóa (Tùy chọn)</label>
+                <input type="text" id="ly_do" name="ly_do" value="{{ default_ly_do }}">
+            </div>
+            <div class="account-list" id="account-list-container">
+                <h3 id="account-list-title">Xem trước các tài khoản hợp lệ</h3>
+                <ul id="account-list"></ul>
+            </div>
+            <div class="button-container">
+                <button type="submit" id="unlock-btn" class="btn-primary" disabled>Mở khóa</button>
+                <button type="button" id="diag-btn" class="btn-secondary" disabled>Chẩn đoán TK không tồn tại</button>
+            </div>
+        </form>
+        <div class="spinner" id="spinner"></div>
+        <pre id="result"></pre>
+    </div>
+
+    <script>
+        const unlockForm = document.getElementById('unlock-form');
+        const userListTextarea = document.getElementById('user_list');
+        const unlockBtn = document.getElementById('unlock-btn');
+        const diagBtn = document.getElementById('diag-btn');
+        const spinner = document.getElementById('spinner');
+        const resultDiv = document.getElementById('result');
+        const accountListContainer = document.getElementById('account-list-container');
+        const accountList = document.getElementById('account-list');
+        const accountListTitle = document.getElementById('account-list-title');
+
+        const ACCOUNT_REGEX = /\b([a-z0-9]+)_(\d+)_([a-z0-9]+)_(\d+)_([a-z0-9]+)\b/g;
+
+        function updatePreview() {
+            const text = userListTextarea.value;
+            const matches = text.match(ACCOUNT_REGEX) || [];
+
+            accountList.innerHTML = ''; // Xóa danh sách cũ
+
+            if (matches.length > 0) {
+                const uniqueMatches = [...new Set(matches)]; // Lọc các tài khoản trùng lặp
+                accountListTitle.innerText = `Tìm thấy ${uniqueMatches.length} tài khoản hợp lệ:`;
+                uniqueMatches.forEach(acc => {
+                    const li = document.createElement('li');
+                    li.textContent = acc;
+                    accountList.appendChild(li);
+                });
+                accountListContainer.style.display = 'block';
+                unlockBtn.disabled = false;
+                diagBtn.disabled = false;
+            } else {
+                accountListTitle.innerText = 'Chưa tìm thấy tài khoản hợp lệ nào.';
+                unlockBtn.disabled = true;
+                diagBtn.disabled = true;
+            }
+        }
+
+        async function handleApiRequest(endpoint, button, buttonText) {
+            // Vô hiệu hóa các nút và hiển thị spinner
+            unlockBtn.disabled = true;
+            diagBtn.disabled = true;
+            button.innerText = 'Đang xử lý...';
+            spinner.style.display = 'block';
+            resultDiv.style.display = 'none';
+
+            const formData = new FormData(unlockForm);
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+                resultDiv.textContent = JSON.stringify(result, null, 2);
+                resultDiv.className = response.ok ? 'success' : 'error';
+            } catch (error) {
+                resultDiv.textContent = `Lỗi kết nối hoặc lỗi server:\n${error}`;
+                resultDiv.className = 'error';
+            } finally {
+                // Kích hoạt lại các nút, ẩn spinner và reset văn bản
+                spinner.style.display = 'none';
+                resultDiv.style.display = 'block';
+                unlockBtn.innerText = 'Mở khóa';
+                diagBtn.innerText = 'Chẩn đoán TK không tồn tại';
+                updatePreview(); // Cập nhật lại trạng thái (disabled/enabled) của nút bấm
+            }
+        }
+
+        // --- Event Listeners ---
+        userListTextarea.addEventListener('input', updatePreview);
+
+        unlockForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            handleApiRequest('/unlock', unlockBtn, 'Mở khóa');
+        });
+
+        diagBtn.addEventListener('click', function() {
+            handleApiRequest('/diagnose', diagBtn, 'Chẩn đoán TK không tồn tại');
+        });
+
+        // Cập nhật lần đầu khi tải trang
+        updatePreview();
+    </script>
+</body>
+</html>
