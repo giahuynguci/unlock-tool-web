@@ -8,6 +8,7 @@ import unicodedata
 import base64
 import time
 import sys
+import os
 from typing import List, Optional, Tuple, Dict
 
 try:
@@ -187,7 +188,7 @@ class ApiClient:
         self.session = self._build_session(auth_header, cookies_str)
 
     def _build_session(self, auth_header: Optional[str], cookies_str: Optional[str]) -> requests.Session:
-        """Xây dựng và cấu hình một session requests."""
+        """Xây dựng và cấu hình một session requests, có hỗ trợ proxy."""
         s = requests.Session()
         headers = {
             "Accept": "*/*",
@@ -200,6 +201,17 @@ class ApiClient:
         if cookies_str:
             headers["Cookie"] = cookies_str
         s.headers.update(headers)
+
+        # Thêm cấu hình proxy từ biến môi trường
+        proxy_url = os.environ.get('PROXY_URL')
+        if proxy_url:
+            proxies = {
+                'http': proxy_url,
+                'https': proxy_url,
+            }
+            s.proxies.update(proxies)
+            print(f"INFO: Using proxy server at {proxy_url}")
+
         return s
 
     def post_unlock(self, url: str, users: List[str], ly_do: str, timeout: int = 30) -> Tuple[int, any]:
