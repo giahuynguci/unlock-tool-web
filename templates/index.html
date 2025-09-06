@@ -21,6 +21,7 @@
         .btn-secondary { background-color: #e4e6eb; color: #4b4f56; }
         .btn-secondary:hover { background-color: #d8dade; }
         .btn-secondary:disabled { background-color: #f0f2f5; color: #bec3c9; cursor: not-allowed; }
+        .btn-clear { background: none; border: none; color: #1877f2; cursor: pointer; padding: 0; font-size: 14px; font-weight: normal; vertical-align: middle; }
         #result { margin-top: 25px; padding: 15px; border-radius: 6px; display: none; word-wrap: break-word; white-space: pre-wrap; max-height: 200px; overflow-y: auto; font-size: 13px; }
         #result.success { background-color: #e7f3ff; border: 1px solid #b8d9ff; color: #004085; }
         #result.error { background-color: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
@@ -42,7 +43,7 @@
                 <textarea id="curl_command" name="curl_command" rows="4" placeholder="Dán toàn bộ chuỗi truy vấn cURL vào đây..."></textarea>
             </div>
             <div class="form-group">
-                <label for="user_list">2. Dán Danh sách ID cần kiểm tra</label>
+                <label for="user_list">2. Dán Danh sách ID cần kiểm tra <button type="button" id="clear-btn" class="btn-clear">(Xóa)</button></label>
                 <textarea id="user_list" name="user_list" placeholder="Dán danh sách ID cần kiểm tra. Hệ thống sẽ tự động lọc ra các định dạng hợp lệ."></textarea>
             </div>
             <div class="form-group">
@@ -131,15 +132,22 @@
         }
 
         // --- Event Listeners ---
+        const clearBtn = document.getElementById('clear-btn');
+
         userListTextarea.addEventListener('input', updatePreview);
+
+        clearBtn.addEventListener('click', function() {
+            userListTextarea.value = ''; // Xóa nội dung
+            updatePreview(); // Cập nhật lại giao diện
+        });
 
         unlockForm.addEventListener('submit', function(event) {
             event.preventDefault();
-            handleApiRequest('/unlock', unlockBtn, 'Mở khóa');
+            handleApiRequest('/unlock', unlockBtn, 'Chạy Kiểm tra');
         });
 
         diagBtn.addEventListener('click', function() {
-            handleApiRequest('/diagnose', diagBtn, 'Chẩn đoán TK không tồn tại');
+            handleApiRequest('/diagnose', diagBtn, 'Phân tích Lỗi');
         });
 
         // Cập nhật lần đầu khi tải trang
